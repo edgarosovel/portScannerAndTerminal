@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="static/css/base.css"/>
+    <link rel="stylesheet" href="static/lib/astiloader/astiloader.css">
+    <link rel="stylesheet" href="static/lib/astimodaler/astimodaler.css">
+    <link rel="stylesheet" href="static/css/bootstrap.css">
+    <link rel="stylesheet" href="static/lib/astinotifier/astinotifier.css">
+    <link rel="stylesheet" href="static/lib/font-awesome-4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+    <div class="left" id="serverdiv">
+        <div class="form-group">
+            <label for="servidor">URL de servidor:</label>
+            <input type="text" name="servidor" class="form-control" id="servidor" placeholder="Ej. google.com">
+        </div>
+        <div class="form-group">
+            <label for="desde">Puerto de inicio:</label>
+            <input type="number" name="desde" class="form-control" id="desde" placeholder="Ej. 80">
+        </div>
+        <div class="form-group">
+            <label for="hasta">Puerto final:</label>
+            <input type="number" name="hasta" class="form-control" id="hasta" placeholder="Ej. 8080">
+        </div>
+        <button onclick="index.escanearPuertos()" class="btn btn-primary">Escanear</button>
+        <br><br>
+        <h5>Puertos encontrados</h5>
+        <div class="panel panel-default">
+            <div class="panel-body" id="botones-puertos">
+            </div>
+        </div>
+    </div>
+    <div class="right">
+        <div class="panel panel-edited">
+            <h4 id="titulo-terminal">Terminal | Sin conexión</h4>
+            <div class="panel-body panel-body-edited" id="terminal-contenido">    
+            </div>
+            <br>
+            <div class="panel-footer footer-edited">
+                <input type="text" class="form-control" id="input-terminal">
+            </div>
+        </div>
+    </div>
+    <script src="static/js/index.js"></script>
+    <script src="static/lib/astiloader/astiloader.js"></script>
+    <script src="static/lib/astimodaler/astimodaler.js"></script>
+    <script src="static/lib/astinotifier/astinotifier.js"></script>
+    <script type="text/javascript">
+        index.init();
+    </script>
+</body>
+</html>
