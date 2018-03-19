@@ -27,10 +27,6 @@ type ParametrosEscaneo struct {
 	Hasta int
 }
 
-type mensajeAPuerto struct {
-	Mensaje string
-}
-
 // handleMessages handles messages
 func handleMessages(_ *astilectron.Window, m bootstrap.MessageIn) (payload interface{}, err error) {
 	switch m.Name {
@@ -76,7 +72,7 @@ func handleMessages(_ *astilectron.Window, m bootstrap.MessageIn) (payload inter
 				return
 			}
 		}
-		err, respuesta := MensajeAPuerto(comando)
+		err, respuesta := mensajeAPuerto(comando)
 		return RespuestaPuerto{err,respuesta}, nil
 	}
 	return

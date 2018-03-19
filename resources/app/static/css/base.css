@@ -66,6 +66,8 @@ html, body {
     width: calc(100% - 30px);
 }
 .panel-body-edited{
+    word-wrap: break-word;
     overflow-y: scroll;
+    overflow-x: hidden;
     height: calc(100% - 84px);
 }

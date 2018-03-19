@@ -1,11 +1,11 @@
 const PUERTOS_CONOCIDOS = {
-	27017: "mongodb [ http://www.mongodb.org/ ]",
-	28017: "mongodb web admin [ http://www.mongodb.org/ ]",
+	27017: "mongodb",
+	28017: "mongodb web admin",
 	21:    "ftp",
 	22:    "SSH",
 	23:    "telnet",
 	25:    "SMTP",
-	66:    "Oracle SQL*NET?",
+	66:    "Oracle SQL*NET",
 	69:    "tftp",
 	80:    "http",
 	88:    "kerberos",
@@ -27,8 +27,13 @@ const PUERTOS_CONOCIDOS = {
 	3396:  "Novell NDPS Printer Agent",
 	3535:  "SMTP (alternate)",
 	554:   "RTSP",
-	9160:  "Cassandra [ http://cassandra.apache.org/ ]",
+	9160:  "Cassandra",
 }
+
+// const FUNCIONES_ESPECIALES = {
+//     22: index.iniciarSSH
+// }
+
 
 var enConexion = false
 
@@ -92,7 +97,7 @@ let index = {
             return
         }
 
-        // regex para revisar el servidor
+        // TODO: regex para revisar el servidor
 
         message.payload = {
             servidor: servidor,
@@ -143,6 +148,38 @@ let index = {
             document.getElementById("terminal-contenido").innerHTML = message.payload.respuesta+"<br>";
         })
     },
+    iniciarSSH(){
+        //PEDIR Y OBTENER USUARIO Y CONTRASEÑA
+        puerto = 22
+        titulo = "Terminal | Puerto: "+puerto
+        if(PUERTOS_CONOCIDOS[puerto]) titulo += " ("+PUERTOS_CONOCIDOS[puerto]+")";
+        document.getElementById("titulo-terminal").textContent = titulo;
+        document.getElementById("terminal-contenido").innerHTML = "Ingrese usuario SSH:"+"<br>";
+
+        let message = {"name": "iniciarSSH"};
+        message.payload = {
+            usuario: usuario,
+            pass: pass
+        };
+        asticode.loader.show();
+        astilectron.sendMessage(message, function(message) {
+            // Init
+            asticode.loader.hide();
+            if (message.name === "error") {
+                asticode.notifier.error(message.name);
+                return
+            }
+            if (message.payload.error){
+                asticode.notifier.error(message.payload.respuesta);
+                return
+            }
+            enConexion=true
+            titulo = "Terminal | Puerto: "+puerto
+            if(PUERTOS_CONOCIDOS[puerto]) titulo += " ("+PUERTOS_CONOCIDOS[puerto]+")";
+            document.getElementById("titulo-terminal").textContent = titulo;
+            document.getElementById("terminal-contenido").innerHTML = message.payload.respuesta+"<br>";
+        })
+    },
     getTerminalInput(){
         input = document.getElementById("input-terminal").value;
         document.getElementById("input-terminal").value = "";
@@ -165,8 +202,9 @@ let index = {
                     document.getElementById("titulo-terminal").textContent = "Terminal | Sin conexión";
                     return
                 }
-                document.getElementById("terminal-contenido").innerHTML += message.payload.respuesta+"<br>";
-                document.getElementById("terminal-contenido").scrollIntoView();
+                var terminalContenido = document.getElementById("terminal-contenido");
+                terminalContenido.innerHTML += message.payload.respuesta+"<br>";
+                terminalContenido.scrollTo(0,terminalContenido.scrollHeight);
             })
         }
     },

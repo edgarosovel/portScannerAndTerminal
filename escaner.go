@@ -3,9 +3,16 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 	"sync"
+	"regexp"
+	"io"
 	"time"
+	"bytes"
 	"github.com/asticode/go-astilectron-bootstrap"
+	"golang.org/x/crypto/ssh"
+	"github.com/mitchellh/go-homedir"
+	// "strconv"
 )
 
 var puertos_encontrados []int
@@ -14,9 +21,11 @@ var numero_de_puertos int
 var progreso int
 var wait_group sync.WaitGroup
 var mutex = sync.Mutex{}
-var conexion net.Conn
 
-const TIEMPO_DE_ESPERA = 15 * 1000 * time.Millisecond //milisegundos
+var conexion net.Conn
+var sesionSSH *ssh.Session
+
+const TIEMPO_DE_ESPERA = 5 * 1000 * time.Millisecond //milisegundos
 
 func obtener_puertos_abiertos(_host string, puerto_inicial int, puerto_final int) []int {
 	host = _host
@@ -54,16 +63,25 @@ func revisar_puerto(puerto int) {
 	wait_group.Done()
 }
 
-func MensajeAPuerto(input string) (bool,string) {
-	if (conexion!=nil){
+func mensajeAPuerto(input string) (bool,string) {
+	if conexion!=nil{
 		fmt.Fprintf(conexion, input+"\n")
 		conexion.SetReadDeadline(time.Now().Add(TIEMPO_DE_ESPERA))
-		buff := make([]byte, 1024)
-		n, err := conexion.Read(buff)
-		if (err != nil){
+		var buff bytes.Buffer
+		io.Copy(&buff, conexion) //leer datos
+		if buff.Len()==0 {
 			return true, "Se perdió la conexión al puerto / servidor"
 		}
-		response := string(buff[:n])
+		response := buff.String()
+		// revisar si es archivo para descargarlo
+		archivoRegex := regexp.MustCompile(`(?i)\w+\.(jpg|png|gif|bmp|jpeg|pdf|zip)`)
+		if esArchivo := archivoRegex.MatchString(input); esArchivo {
+			res, err := guardarArchivo(buff, archivoRegex.FindString(input));
+			if err != nil{
+				return true, "Error al descargar el archivo"
+			}
+			return false, res
+		}
 		return false, response
 	}
 	return true, "Se perdió la conexión al puerto / servidor"
@@ -73,15 +91,83 @@ func conectarAPuerto(puerto int) (bool,string) {
 	servidor := fmt.Sprintf("%s%s%d", host, ":", puerto)
 	var err error
 	conexion, err = net.DialTimeout("tcp", servidor, TIEMPO_DE_ESPERA)
-	if(err!=nil){
-		return true,"No se pudo realizar la conexión al puerto"
+	if err!=nil {
 		conexion = nil
+		return true,"No se pudo realizar la conexión al puerto"
 	}
 	return false,"Conectado"
 }
 
 func cerrarConexion()(bool,string){
 	conexion.Close()
-	conexion = nil
+	sesionSSH.Close()
 	return false,"Desconectado"
 }
+
+
+// SSH
+func iniciarSSH(usuario string, pass string) (bool, string){
+	var hostKey ssh.PublicKey
+	config := &ssh.ClientConfig{
+		User: usuario,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(pass),
+		},
+		HostKeyCallback: ssh.FixedHostKey(hostKey),
+	}
+	conexionSSH, err := ssh.Dial("tcp", host+":22", config)
+	if err != nil {
+		conexionSSH = nil
+		return true,"No se pudo realizar la conexión al puerto"
+	}
+	sesionSSH, err = conexionSSH.NewSession()
+	if err != nil {
+		sesionSSH.Close()
+		conexionSSH.Close()
+		return true,"No se pudo realizar la conexión al puerto"
+	}
+
+	return false,"Conectado"
+}
+
+func mensajeSSH(input string)(bool, string){
+	if sesionSSH!=nil{
+		var response bytes.Buffer
+		sesionSSH.Stdout = &response
+		if err := sesionSSH.Run(input); err != nil {
+			return true, "Se perdió la conexión al puerto / servidor"
+		}
+		return false, response.String()
+	}
+	return true, "Se perdió la conexión al puerto / servidor"
+}
+
+func guardarArchivo(buff bytes.Buffer, fileName string)(string, error){
+	homePath, _ := homedir.Dir()
+	homePath, _ = homedir.Expand(homePath)
+	filePath := homePath+"/"+fileName
+	file, err := os.Create(filePath)
+    if err != nil {
+        return "Error", err
+	}
+	endOfHeader := bytes.Index(buff.Bytes(), []byte("\n\r\n"))
+	// endOfHeader := bytes.Index(buff.Bytes(), []byte("\n"))
+	// fileWithoutHeaders := bytes.SplitN(buff.Bytes(), []byte("\n"), 13)
+	// var s string
+	// for _, x := range fileWithoutHeaders {
+	// 	fmt.Println("new line")
+	// 	fmt.Println(x[:])
+	// 	// s += string(x[:]) + "|"
+	// }
+	var fileWithoutHeaders bytes.Buffer
+	fileWithoutHeaders.Write(buff.Bytes()[endOfHeader+3:])
+	fileWithoutHeaders.WriteTo(file)
+	file.Close()
+    return "<br>Archivo guardado en: "+filePath, nil
+}
+
+// func main (){
+// 	obtener_puertos_abiertos("google.com", 80, 80)
+// 	conectarAPuerto(80)
+// 	mensajeAPuerto("GET /logos/classicplus.png")	
+// }
