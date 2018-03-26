@@ -25,7 +25,7 @@ var mutex = sync.Mutex{}
 var conexion net.Conn
 var sesionSSH *ssh.Session
 
-const TIEMPO_DE_ESPERA = 5 * 1000 * time.Millisecond //milisegundos
+const TIEMPO_DE_ESPERA = 7 * 1000 * time.Millisecond //milisegundos
 
 func obtener_puertos_abiertos(_host string, puerto_inicial int, puerto_final int) []int {
 	host = _host
